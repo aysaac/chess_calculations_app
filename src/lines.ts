@@ -1,6 +1,6 @@
 import type { Key } from 'chessground/types';
 import type { Move, Line } from './types';
-import { drawArrows } from './board';
+import { drawArrows, resetToInitial, replayMoves } from './board';
 
 let currentLine: Move[] = [];
 let completedLines: Line[] = [];
@@ -23,6 +23,7 @@ export function addMove(from: Key, to: Key) {
 export function undo() {
   if (currentLine.length === 0) return;
   currentLine.pop();
+  replayMoves(currentLine);
   drawArrows(currentLine);
   notify();
 }
@@ -31,6 +32,7 @@ export function newLine() {
   if (currentLine.length === 0) return;
   completedLines.push({ moves: [...currentLine] });
   currentLine = [];
+  resetToInitial();
   drawArrows(currentLine);
   notify();
 }

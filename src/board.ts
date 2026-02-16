@@ -3,9 +3,11 @@ import type { Api } from 'chessground/api';
 import type { DrawShape } from 'chessground/draw';
 import type { Key } from 'chessground/types';
 import type { Move } from './types';
+import { getArrowVisibility, getArrowColorMode, getBoardVisibility } from './settings';
 
 let cg: Api | null = null;
 let currentFen: string = '';
+let lastDrawnMoves: Move[] = [];
 let onMoveInput: ((from: Key, to: Key) => void) | null = null;
 
 export function setOnMoveInput(cb: (from: Key, to: Key) => void) {
@@ -23,9 +25,13 @@ export function initBoard(element: HTMLElement, fen: string, orientation: 'white
       color: 'both',
       events: {
         after(orig: Key, dest: Key) {
-          // Capture the move, then reset the board to the original position
           if (onMoveInput) onMoveInput(orig, dest);
-          resetPosition();
+          if (getBoardVisibility() === 'static') {
+            resetPosition();
+          } else {
+            // In dynamic mode, keep pieces where they landed but re-enable movement
+            reEnableMovement();
+          }
         },
       },
     },
@@ -50,7 +56,6 @@ export function initBoard(element: HTMLElement, fen: string, orientation: 'white
 
 function resetPosition() {
   if (!cg) return;
-  // Snap pieces back to the original puzzle position without clearing arrows
   cg.set({
     fen: currentFen,
     lastMove: undefined,
@@ -59,6 +64,32 @@ function resetPosition() {
       color: 'both',
     },
   });
+}
+
+function reEnableMovement() {
+  if (!cg) return;
+  cg.set({
+    lastMove: undefined,
+    movable: {
+      free: true,
+      color: 'both',
+    },
+  });
+}
+
+export function resetToInitial() {
+  resetPosition();
+}
+
+export function replayMoves(moves: Move[]) {
+  if (!cg) return;
+  if (getBoardVisibility() === 'static') return;
+  // Reset to initial position then replay each move visually
+  resetPosition();
+  for (const move of moves) {
+    cg.move(move.from, move.to);
+  }
+  reEnableMovement();
 }
 
 export function getApi(): Api | null {
@@ -76,12 +107,38 @@ export function setPosition(fen: string, orientation: 'white' | 'black') {
 }
 
 export function drawArrows(moves: Move[]) {
+  lastDrawnMoves = moves;
+  renderArrows();
+}
+
+export function drawCurrentArrows() {
+  renderArrows();
+}
+
+function renderArrows() {
   if (!cg) return;
-  const shapes: DrawShape[] = moves.map((move, i) => ({
-    orig: move.from,
-    dest: move.to,
-    brush: i % 2 === 0 ? 'green' : 'red',
-  }));
+
+  const moves = lastDrawnMoves;
+  const visibility = getArrowVisibility();
+  const colorMode = getArrowColorMode();
+
+  if (visibility === 'none' || moves.length === 0) {
+    cg.setAutoShapes([]);
+    return;
+  }
+
+  const visibleMoves = visibility === 'last'
+    ? [moves[moves.length - 1]]
+    : moves;
+
+  const shapes: DrawShape[] = visibleMoves.map((move, i) => {
+    const originalIndex = visibility === 'last' ? moves.length - 1 : i;
+    const brush = colorMode === 'uniform'
+      ? 'green'
+      : (originalIndex % 2 === 0 ? 'green' : 'red');
+    return { orig: move.from, dest: move.to, brush };
+  });
+
   cg.setAutoShapes(shapes);
 }
 

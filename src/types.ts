@@ -27,3 +27,13 @@ export interface CsvPuzzle {
   Rating: string;
   Themes: string;
 }
+
+export type ArrowVisibility = 'all' | 'last' | 'none';
+export type ArrowColorMode = 'uniform' | 'per-player';
+export type BoardVisibility = 'static' | 'dynamic';
+
+export interface Settings {
+  arrowVisibility: ArrowVisibility;
+  arrowColorMode: ArrowColorMode;
+  boardVisibility: BoardVisibility;
+}
