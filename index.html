@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chess Calculation Trainer</title>
+  </head>
+  <body>
+    <div id="app">
+      <h1>Chess Calculation Trainer</h1>
+      <div id="puzzle-info"></div>
+      <div id="status"></div>
+      <div id="main-layout">
+        <div id="board-container">
+          <div id="board"></div>
+        </div>
+        <div id="sidebar">
+          <div id="controls">
+            <button id="btn-new-line">New Line</button>
+            <button id="btn-undo">Undo</button>
+            <button id="btn-finished">Finished</button>
+            <button id="btn-next" disabled>Next Puzzle</button>
+            <button id="source-toggle">Source: CSV</button>
+          </div>
+          <div id="lines"></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
