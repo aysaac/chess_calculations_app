@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js';
 import type { Puzzle, PuzzleSource, CsvPuzzle } from './types';
+import { loadSettings } from './settings';
 
 let puzzleSource: PuzzleSource = 'csv';
 let csvPuzzles: CsvPuzzle[] | null = null;
@@ -48,7 +49,17 @@ async function loadFromCsv(): Promise<Puzzle> {
     csvPuzzles = parseCsv(text);
   }
 
-  const entry = csvPuzzles[Math.floor(Math.random() * csvPuzzles.length)];
+  const { ratingMin, ratingMax } = loadSettings();
+  const filtered = csvPuzzles.filter(p => {
+    const r = parseInt(p.Rating, 10);
+    return r >= ratingMin && r <= ratingMax;
+  });
+
+  if (filtered.length === 0) {
+    throw new Error(`No puzzles found in rating range ${ratingMin}–${ratingMax}`);
+  }
+
+  const entry = filtered[Math.floor(Math.random() * filtered.length)];
   const moves = entry.Moves.split(' ');
 
   // CSV FEN is the position before the opponent's last move.

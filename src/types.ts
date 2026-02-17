@@ -36,4 +36,7 @@ export interface Settings {
   arrowVisibility: ArrowVisibility;
   arrowColorMode: ArrowColorMode;
   boardVisibility: BoardVisibility;
+  playerRating: number;
+  ratingMin: number;
+  ratingMax: number;
 }

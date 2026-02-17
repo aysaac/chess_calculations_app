@@ -6,6 +6,9 @@ const defaults: Settings = {
   arrowVisibility: 'all',
   arrowColorMode: 'per-player',
   boardVisibility: 'static',
+  playerRating: 1500,
+  ratingMin: 1450,
+  ratingMax: 1550,
 };
 
 export function loadSettings(): Settings {

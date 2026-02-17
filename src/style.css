@@ -108,8 +108,8 @@ h1 {
 
 #sidebar {
   flex: 1;
-  min-width: 200px;
-  max-width: 320px;
+  min-width: 250px;
+  max-width: 450px;
 }
 
 #controls {
