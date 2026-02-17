@@ -231,6 +231,15 @@ button:disabled {
   color: #8aca8a;
 }
 
+/* Static board: hide the piece following the cursor, keep ghost at full opacity */
+.static-board piece.dragging {
+  opacity: 0 !important;
+}
+
+.static-board piece.ghost {
+  opacity: 1 !important;
+}
+
 /* Mobile responsive */
 @media (max-width: 1000px) {
   #main-layout {

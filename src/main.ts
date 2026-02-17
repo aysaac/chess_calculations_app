@@ -89,4 +89,3 @@ setOnChange(updateUI);
 // Start
 sourceToggle.textContent = `Source: ${getPuzzleSource().toUpperCase()}`;
 startPuzzle();
-

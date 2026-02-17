@@ -16,6 +16,11 @@ export function setOnMoveInput(cb: (from: Key, to: Key) => void) {
 
 export function initBoard(element: HTMLElement, fen: string, orientation: 'white' | 'black'): Api {
   currentFen = fen;
+  const isDynamic = getBoardVisibility() === 'dynamic';
+
+  // Toggle CSS class to hide drag visuals in static mode
+  element.classList.toggle('static-board', !isDynamic);
+
   cg = Chessground(element, {
     fen,
     orientation,
@@ -29,7 +34,6 @@ export function initBoard(element: HTMLElement, fen: string, orientation: 'white
           if (getBoardVisibility() === 'static') {
             resetPosition();
           } else {
-            // In dynamic mode, keep pieces where they landed but re-enable movement
             reEnableMovement();
           }
         },
@@ -44,6 +48,9 @@ export function initBoard(element: HTMLElement, fen: string, orientation: 'white
     },
     highlight: {
       lastMove: false,
+    },
+    animation: {
+      enabled: isDynamic,
     },
     drawable: {
       enabled: false,
