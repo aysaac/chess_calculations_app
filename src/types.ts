@@ -3,6 +3,8 @@ import type { Key } from 'chessground/types';
 export interface Move {
   from: Key;
   to: Key;
+  san?: string;
+  legal: boolean;
 }
 
 export interface Line {

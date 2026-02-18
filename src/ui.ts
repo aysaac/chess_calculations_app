@@ -1,11 +1,24 @@
 import type { Move, Puzzle } from './types';
 import { getCurrentLine, getCompletedLines } from './lines';
+import { solutionToSan } from './validation';
+
+const pieceIcons: Record<string, string> = {
+  K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘',
+};
 
 function moveToUci(move: Move): string {
   return `${move.from}${move.to}`;
 }
 
-function formatLine(moves: Move[], startNumber: number = 1): string {
+function sanWithIcon(san: string): string {
+  const first = san[0];
+  if (pieceIcons[first]) {
+    return pieceIcons[first] + san.slice(1);
+  }
+  return san;
+}
+
+function formatLineUci(moves: Move[], startNumber: number = 1): string {
   let result = '';
   for (let i = 0; i < moves.length; i++) {
     const moveNum = startNumber + Math.floor(i / 2);
@@ -18,14 +31,40 @@ function formatLine(moves: Move[], startNumber: number = 1): string {
   return result.trim();
 }
 
-function formatSolution(solution: string[]): string {
+function formatLineValidated(moves: Move[], startNumber: number = 1): string {
   let result = '';
-  for (let i = 0; i < solution.length; i++) {
-    const moveNum = 1 + Math.floor(i / 2);
+  let seenIllegal = false;
+
+  for (let i = 0; i < moves.length; i++) {
+    const moveNum = startNumber + Math.floor(i / 2);
+    const move = moves[i];
+
+    if (!move.legal) seenIllegal = true;
+
+    const text = (move.legal && move.san) ? sanWithIcon(move.san) : moveToUci(move);
+    const moveHtml = seenIllegal
+      ? `<span class="illegal-move">${text}</span>`
+      : text;
+
     if (i % 2 === 0) {
-      result += `${moveNum}. ${solution[i]} `;
+      result += `${moveNum}. ${moveHtml} `;
     } else {
-      result += `${solution[i]} `;
+      result += `${moveHtml} `;
+    }
+  }
+  return result.trim();
+}
+
+function formatSolution(fen: string, solution: string[]): string {
+  const sanMoves = solutionToSan(fen, solution);
+  let result = '';
+  for (let i = 0; i < sanMoves.length; i++) {
+    const moveNum = 1 + Math.floor(i / 2);
+    const display = sanWithIcon(sanMoves[i]);
+    if (i % 2 === 0) {
+      result += `${moveNum}. ${display} `;
+    } else {
+      result += `${display} `;
     }
   }
   return result.trim();
@@ -42,16 +81,18 @@ export function updateLineDisplay(container: HTMLElement, finished: boolean = fa
   }
 
   completedLines.forEach((line, idx) => {
+    const movesHtml = finished ? formatLineValidated(line.moves) : formatLineUci(line.moves);
     html += `<div class="line completed-line">
       <span class="line-label">Line ${idx + 1}:</span>
-      <span class="line-moves">${formatLine(line.moves)}</span>
+      <span class="line-moves">${movesHtml}</span>
     </div>`;
   });
 
   if (currentLine.length > 0) {
+    const movesHtml = finished ? formatLineValidated(currentLine) : formatLineUci(currentLine);
     html += `<div class="line current-line">
       <span class="line-label">${finished ? `Line ${completedLines.length + 1}:` : 'Current:'}</span>
-      <span class="line-moves">${formatLine(currentLine)}</span>
+      <span class="line-moves">${movesHtml}</span>
       ${!finished ? '<span class="in-progress">●</span>' : ''}
     </div>`;
   }
@@ -60,7 +101,7 @@ export function updateLineDisplay(container: HTMLElement, finished: boolean = fa
     html += `<div class="solution">
       <h3>Solution</h3>
       <div class="line solution-line">
-        <span class="line-moves">${formatSolution(puzzle.solution)}</span>
+        <span class="line-moves">${formatSolution(puzzle.fen, puzzle.solution)}</span>
       </div>
     </div>`;
   }

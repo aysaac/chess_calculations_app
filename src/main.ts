@@ -6,7 +6,7 @@ import './style.css';
 import { initBoard } from './board';
 import { loadPuzzle, setPuzzleSource, getPuzzleSource } from './puzzle';
 import { initInput, setInputEnabled } from './input';
-import { newLine, undo, finish, reset, setOnChange } from './lines';
+import { newLine, undo, finish, reset, setOnChange, setPuzzleFen } from './lines';
 import { updateLineDisplay, updatePuzzleInfo, setButtonStates } from './ui';
 import type { Puzzle } from './types';
 
@@ -47,6 +47,7 @@ async function startPuzzle() {
     return;
   }
 
+  setPuzzleFen(currentPuzzle.fen);
   initBoard(boardEl, currentPuzzle.fen, currentPuzzle.playerColor);
   initInput();
   setInputEnabled(true);

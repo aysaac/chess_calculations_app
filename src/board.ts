@@ -9,6 +9,7 @@ let cg: Api | null = null;
 let currentFen: string = '';
 let lastDrawnMoves: Move[] = [];
 let onMoveInput: ((from: Key, to: Key) => void) | null = null;
+let resizeObserver: ResizeObserver | null = null;
 
 export function setOnMoveInput(cb: (from: Key, to: Key) => void) {
   onMoveInput = cb;
@@ -58,6 +59,25 @@ export function initBoard(element: HTMLElement, fen: string, orientation: 'white
       autoShapes: [],
     },
   });
+
+  // Make the board resizable — keep it square and sync chessground
+  if (resizeObserver) resizeObserver.disconnect();
+  resizeObserver = new ResizeObserver(entries => {
+    for (const entry of entries) {
+      const size = Math.round(Math.min(entry.contentRect.width, entry.contentRect.height));
+      if (size < 200) continue;
+      const wrap = element.querySelector('.cg-wrap') as HTMLElement;
+      if (wrap) {
+        wrap.style.width = `${size}px`;
+        wrap.style.height = `${size}px`;
+      }
+      element.style.width = `${size}px`;
+      element.style.height = `${size}px`;
+      cg?.redrawAll();
+    }
+  });
+  resizeObserver.observe(element);
+
   return cg;
 }
 

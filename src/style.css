@@ -98,6 +98,10 @@ h1 {
 #board {
   width: 640px;
   height: 640px;
+  resize: both;
+  overflow: hidden;
+  min-width: 200px;
+  min-height: 200px;
 }
 
 /* chessground needs explicit dimensions on the wrapper */
@@ -199,6 +203,11 @@ button:disabled {
 
 .completed-line {
   border-left: 3px solid #4a4a6a;
+}
+
+.illegal-move {
+  color: #ff4444;
+  font-weight: 600;
 }
 
 .in-progress {

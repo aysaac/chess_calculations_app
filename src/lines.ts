@@ -1,7 +1,9 @@
 import type { Key } from 'chessground/types';
 import type { Move, Line } from './types';
 import { drawArrows, resetToInitial, replayMoves } from './board';
+import { validateMoves } from './validation';
 
+let puzzleFen: string = '';
 let currentLine: Move[] = [];
 let completedLines: Line[] = [];
 let onChange: (() => void) | null = null;
@@ -14,8 +16,19 @@ function notify() {
   if (onChange) onChange();
 }
 
+export function setPuzzleFen(fen: string) {
+  puzzleFen = fen;
+}
+
+function revalidateCurrent() {
+  if (puzzleFen && currentLine.length > 0) {
+    currentLine = validateMoves(puzzleFen, currentLine);
+  }
+}
+
 export function addMove(from: Key, to: Key) {
-  currentLine.push({ from, to });
+  currentLine.push({ from, to, legal: true });
+  revalidateCurrent();
   drawArrows(currentLine);
   notify();
 }
@@ -23,6 +36,7 @@ export function addMove(from: Key, to: Key) {
 export function undo() {
   if (currentLine.length === 0) return;
   currentLine.pop();
+  revalidateCurrent();
   replayMoves(currentLine);
   drawArrows(currentLine);
   notify();
@@ -38,7 +52,6 @@ export function newLine() {
 }
 
 export function finish(): { completedLines: Line[]; currentLine: Move[] } {
-  // If there's an in-progress line, include it
   const result = {
     completedLines: [...completedLines],
     currentLine: [...currentLine],
