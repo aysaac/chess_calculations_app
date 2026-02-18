@@ -104,6 +104,30 @@ function reEnableMovement() {
   });
 }
 
+export function playSetupMove(from: Key, to: Key, afterFen: string): Promise<void> {
+  return new Promise(resolve => {
+    if (!cg) { resolve(); return; }
+    // Ensure animation is on for the setup move
+    cg.set({ animation: { enabled: true } });
+    cg.move(from, to);
+    // Update currentFen to the post-setup position
+    currentFen = afterFen;
+    // Wait for animation to finish, then resolve
+    setTimeout(() => {
+      if (cg) {
+        // Sync the board to the real post-setup FEN (handles castling/en-passant visuals)
+        cg.set({ fen: afterFen, lastMove: [from, to] });
+        // Draw an arrow over the setup move
+        cg.setAutoShapes([{ orig: from, dest: to, brush: 'yellow' }]);
+        // Restore the user's animation preference
+        const isDynamic = getBoardVisibility() === 'dynamic';
+        cg.set({ animation: { enabled: isDynamic } });
+      }
+      resolve();
+    }, 350);
+  });
+}
+
 export function resetToInitial() {
   resetPosition();
 }

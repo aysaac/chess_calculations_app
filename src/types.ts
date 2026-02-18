@@ -13,7 +13,9 @@ export interface Line {
 
 export interface Puzzle {
   id: string;
-  fen: string;
+  preSetupFen: string;      // Position before the opponent's setup move
+  setupMove: { from: Key; to: Key };  // The opponent's triggering move
+  fen: string;              // Position after setup move (where player calculates from)
   solution: string[];       // UCI moves like "e2e4"
   playerColor: 'white' | 'black';
   rating?: number;

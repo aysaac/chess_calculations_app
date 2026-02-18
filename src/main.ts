@@ -3,7 +3,7 @@ import 'chessground/assets/chessground.brown.css';
 import 'chessground/assets/chessground.cburnett.css';
 import './style.css';
 
-import { initBoard } from './board';
+import { initBoard, playSetupMove } from './board';
 import { loadPuzzle, setPuzzleSource, getPuzzleSource } from './puzzle';
 import { initInput, setInputEnabled } from './input';
 import { newLine, undo, finish, reset, setOnChange, setPuzzleFen } from './lines';
@@ -48,12 +48,18 @@ async function startPuzzle() {
   }
 
   setPuzzleFen(currentPuzzle.fen);
-  initBoard(boardEl, currentPuzzle.fen, currentPuzzle.playerColor);
+  // Show the pre-setup position first, with input disabled
+  initBoard(boardEl, currentPuzzle.preSetupFen, currentPuzzle.playerColor);
   initInput();
-  setInputEnabled(true);
+  setInputEnabled(false);
   updatePuzzleInfo(puzzleInfoEl, currentPuzzle);
-  statusEl.textContent = `${currentPuzzle.playerColor === 'white' ? 'White' : 'Black'} to move. Drag pieces or click squares to input your lines.`;
   updateUI();
+
+  // Animate the opponent's setup move, then enable input
+  const { from, to } = currentPuzzle.setupMove;
+  await playSetupMove(from, to, currentPuzzle.fen);
+  setInputEnabled(true);
+  statusEl.textContent = `${currentPuzzle.playerColor === 'white' ? 'White' : 'Black'} to move. Drag pieces or click squares to input your lines.`;
 }
 
 // Button handlers

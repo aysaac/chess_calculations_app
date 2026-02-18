@@ -1,8 +1,9 @@
 import { Chess } from 'chess.js';
+import type { Key } from 'chessground/types';
 import type { Puzzle, PuzzleSource, CsvPuzzle } from './types';
 import { loadSettings } from './settings';
 
-let puzzleSource: PuzzleSource = 'csv';
+let puzzleSource: PuzzleSource = 'api';
 let csvPuzzles: CsvPuzzle[] | null = null;
 
 export function setPuzzleSource(source: PuzzleSource) {
@@ -47,10 +48,12 @@ function tryBuildPuzzle(entry: CsvPuzzle): Puzzle | null {
 
   // CSV FEN is the position before the opponent's last move.
   // First move in Moves is the opponent's move that sets up the puzzle.
-  const chess = new Chess(entry.FEN);
-  const setupMove = uciToMove(moves[0]);
+  const preSetupFen = entry.FEN;
+  const chess = new Chess(preSetupFen);
+  const setupUci = moves[0];
+  const setupMoveObj = uciToMove(setupUci);
   try {
-    chess.move(setupMove);
+    chess.move(setupMoveObj);
   } catch {
     return null;
   }
@@ -71,6 +74,8 @@ function tryBuildPuzzle(entry: CsvPuzzle): Puzzle | null {
 
   return {
     id: entry.PuzzleId,
+    preSetupFen,
+    setupMove: { from: setupUci.slice(0, 2) as Key, to: setupUci.slice(2, 4) as Key },
     fen,
     solution,
     playerColor: playerColor as 'white' | 'black',
@@ -107,7 +112,7 @@ async function loadFromCsv(): Promise<Puzzle> {
 }
 
 async function loadFromApi(): Promise<Puzzle> {
-  const resp = await fetch('https://lichess.org/api/puzzle/daily');
+  const resp = await fetch('https://lichess.org/api/puzzle/next');
   const data = await resp.json();
 
   const pgn = data.game.pgn;
@@ -118,19 +123,27 @@ async function loadFromApi(): Promise<Puzzle> {
   chess.loadPgn(pgn);
   const history = chess.history({ verbose: true });
 
-  // Reset and replay up to initialPly
+  // Replay up to just before the setup move
   chess.reset();
   for (let i = 0; i < initialPly && i < history.length; i++) {
     chess.move(history[i].san);
   }
+  const preSetupFen = chess.fen();
+
+  // Play the setup move (opponent's triggering move)
+  const setupHist = history[initialPly];
+  chess.move(setupHist.san);
 
   const fen = chess.fen();
   const playerColor = chess.turn() === 'w' ? 'white' : 'black';
+  const solution: string[] = data.puzzle.solution;
 
   return {
     id: data.puzzle.id,
+    preSetupFen,
+    setupMove: { from: setupHist.from as Key, to: setupHist.to as Key },
     fen,
-    solution: data.puzzle.solution,
+    solution,
     playerColor: playerColor as 'white' | 'black',
     rating: data.puzzle.rating,
     themes: data.puzzle.themes,
