@@ -42,6 +42,43 @@ function uciToMove(uci: string): { from: string; to: string; promotion?: string 
   };
 }
 
+function tryBuildPuzzle(entry: CsvPuzzle): Puzzle | null {
+  const moves = entry.Moves.split(' ');
+
+  // CSV FEN is the position before the opponent's last move.
+  // First move in Moves is the opponent's move that sets up the puzzle.
+  const chess = new Chess(entry.FEN);
+  const setupMove = uciToMove(moves[0]);
+  try {
+    chess.move(setupMove);
+  } catch {
+    return null;
+  }
+
+  const fen = chess.fen();
+  const playerColor = chess.turn() === 'w' ? 'white' : 'black';
+  const solution = moves.slice(1);
+
+  // Validate every solution move is legal
+  const verify = new Chess(fen);
+  for (const uci of solution) {
+    try {
+      verify.move(uciToMove(uci));
+    } catch {
+      return null;
+    }
+  }
+
+  return {
+    id: entry.PuzzleId,
+    fen,
+    solution,
+    playerColor: playerColor as 'white' | 'black',
+    rating: parseInt(entry.Rating, 10),
+    themes: entry.Themes ? entry.Themes.split(' ') : [],
+  };
+}
+
 async function loadFromCsv(): Promise<Puzzle> {
   if (!csvPuzzles) {
     const resp = await fetch('/puzzles.csv');
@@ -59,30 +96,14 @@ async function loadFromCsv(): Promise<Puzzle> {
     throw new Error(`No puzzles found in rating range ${ratingMin}–${ratingMax}`);
   }
 
-  const entry = filtered[Math.floor(Math.random() * filtered.length)];
-  const moves = entry.Moves.split(' ');
+  // Shuffle and try candidates until we find a valid one
+  const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+  for (const entry of shuffled) {
+    const puzzle = tryBuildPuzzle(entry);
+    if (puzzle) return puzzle;
+  }
 
-  // CSV FEN is the position before the opponent's last move.
-  // First move in Moves is the opponent's move that sets up the puzzle.
-  const chess = new Chess(entry.FEN);
-  const setupMove = uciToMove(moves[0]);
-  chess.move(setupMove);
-  const fen = chess.fen();
-
-  // The player is the side to move after the setup move
-  const playerColor = chess.turn() === 'w' ? 'white' : 'black';
-
-  // Solution is the remaining moves (the ones the player must find)
-  const solution = moves.slice(1);
-
-  return {
-    id: entry.PuzzleId,
-    fen,
-    solution,
-    playerColor: playerColor as 'white' | 'black',
-    rating: parseInt(entry.Rating, 10),
-    themes: entry.Themes ? entry.Themes.split(' ') : [],
-  };
+  throw new Error('No valid puzzles found in rating range (all had illegal moves)');
 }
 
 async function loadFromApi(): Promise<Puzzle> {
