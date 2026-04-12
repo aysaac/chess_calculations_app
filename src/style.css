@@ -95,6 +95,19 @@ h1 {
   flex-shrink: 0;
 }
 
+#board-wrap {
+  position: relative;
+  width: 640px;
+  height: 640px;
+}
+
+#board-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  cursor: pointer;
+}
+
 #board {
   width: 640px;
   height: 640px;

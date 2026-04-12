@@ -111,8 +111,22 @@ async function loadFromCsv(): Promise<Puzzle> {
   throw new Error('No valid puzzles found in rating range (all had illegal moves)');
 }
 
+type LichessDifficulty = 'easiest' | 'easier' | 'normal' | 'harder' | 'hardest';
+
+function ratingToDifficulty(rating: number): LichessDifficulty {
+  if (rating < 1100) return 'easiest';
+  if (rating < 1300) return 'easier';
+  if (rating < 1700) return 'normal';
+  if (rating < 2100) return 'harder';
+  return 'hardest';
+}
+
 async function loadFromApi(): Promise<Puzzle> {
-  const resp = await fetch('https://lichess.org/api/puzzle/next');
+  const { ratingMin, ratingMax } = loadSettings();
+  const targetRating = Math.round((ratingMin + ratingMax) / 2);
+  const difficulty = ratingToDifficulty(targetRating);
+
+  const resp = await fetch(`https://lichess.org/api/puzzle/next?difficulty=${difficulty}`);
   const data = await resp.json();
 
   const pgn = data.game.pgn;

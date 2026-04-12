@@ -6,20 +6,83 @@ import type { Move } from './types';
 import { getArrowVisibility, getArrowColorMode, getBoardVisibility } from './settings';
 
 let cg: Api | null = null;
+let boardElement: HTMLElement | null = null;
 let currentFen: string = '';
+let currentOrientation: 'white' | 'black' = 'white';
 let lastDrawnMoves: Move[] = [];
 let onMoveInput: ((from: Key, to: Key) => void) | null = null;
 let resizeObserver: ResizeObserver | null = null;
+let inputEnabled = true;
+let selectedSquare: Key | null = null;
+let clickHandler: ((e: MouseEvent) => void) | null = null;
+let overlayElement: HTMLElement | null = null;
+
+const files = 'abcdefgh';
 
 export function setOnMoveInput(cb: (from: Key, to: Key) => void) {
   onMoveInput = cb;
 }
 
-export function initBoard(element: HTMLElement, fen: string, orientation: 'white' | 'black'): Api {
-  currentFen = fen;
-  const isDynamic = getBoardVisibility() === 'dynamic';
+function squareFromEvent(e: MouseEvent): Key | null {
+  if (!boardElement) return null;
+  const rect = boardElement.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  if (x < 0 || y < 0 || x >= rect.width || y >= rect.height) return null;
 
-  // Toggle CSS class to hide drag visuals in static mode
+  const cellW = rect.width / 8;
+  const cellH = rect.height / 8;
+  let col = Math.floor(x / cellW);
+  let row = Math.floor(y / cellH);
+
+  if (currentOrientation === 'white') {
+    row = 7 - row;
+  } else {
+    col = 7 - col;
+  }
+
+  return `${files[col]}${row + 1}` as Key;
+}
+
+function updateSelectedHighlight() {
+  if (!cg) return;
+  if (selectedSquare) {
+    cg.selectSquare(selectedSquare);
+  } else {
+    cg.selectSquare(null);
+  }
+}
+
+function handleBoardClick(e: MouseEvent) {
+  if (!inputEnabled) return;
+
+  const square = squareFromEvent(e);
+  if (!square) return;
+
+  if (!selectedSquare) {
+    selectedSquare = square;
+    updateSelectedHighlight();
+  } else {
+    if (square === selectedSquare) {
+      // Clicked same square — deselect
+      selectedSquare = null;
+      updateSelectedHighlight();
+      return;
+    }
+    const from = selectedSquare;
+    selectedSquare = null;
+    updateSelectedHighlight();
+    if (onMoveInput) onMoveInput(from, square);
+  }
+}
+
+export function initBoard(element: HTMLElement, fen: string, orientation: 'white' | 'black'): Api {
+  boardElement = element;
+  currentFen = fen;
+  currentOrientation = orientation;
+  selectedSquare = null;
+
+  const isDynamic = getBoardVisibility() === 'dynamic';
   element.classList.toggle('static-board', !isDynamic);
 
   cg = Chessground(element, {
@@ -27,25 +90,14 @@ export function initBoard(element: HTMLElement, fen: string, orientation: 'white
     orientation,
     coordinates: true,
     movable: {
-      free: true,
-      color: 'both',
-      events: {
-        after(orig: Key, dest: Key) {
-          if (onMoveInput) onMoveInput(orig, dest);
-          if (getBoardVisibility() === 'static') {
-            resetPosition();
-          } else {
-            reEnableMovement();
-          }
-        },
-      },
+      free: false,
+      color: undefined,
     },
     draggable: {
-      enabled: true,
-      showGhost: true,
+      enabled: false,
     },
     selectable: {
-      enabled: true,
+      enabled: false,
     },
     highlight: {
       lastMove: false,
@@ -60,7 +112,17 @@ export function initBoard(element: HTMLElement, fen: string, orientation: 'white
     },
   });
 
-  // Make the board resizable — keep it square and sync chessground
+  // Attach click handler to the overlay so it's never intercepted by chessground
+  overlayElement = document.getElementById('board-overlay');
+  if (overlayElement) {
+    if (clickHandler) {
+      overlayElement.removeEventListener('click', clickHandler);
+    }
+    clickHandler = (e: MouseEvent) => handleBoardClick(e);
+    overlayElement.addEventListener('click', clickHandler);
+  }
+
+  // Make the board resizable — keep it square and sync chessground + overlay
   if (resizeObserver) resizeObserver.disconnect();
   resizeObserver = new ResizeObserver(entries => {
     for (const entry of entries) {
@@ -73,6 +135,12 @@ export function initBoard(element: HTMLElement, fen: string, orientation: 'white
       }
       element.style.width = `${size}px`;
       element.style.height = `${size}px`;
+      // Keep the wrap div in sync too
+      const boardWrap = element.parentElement;
+      if (boardWrap) {
+        boardWrap.style.width = `${size}px`;
+        boardWrap.style.height = `${size}px`;
+      }
       cg?.redrawAll();
     }
   });
@@ -86,61 +154,35 @@ function resetPosition() {
   cg.set({
     fen: currentFen,
     lastMove: undefined,
-    movable: {
-      free: true,
-      color: 'both',
-    },
   });
 }
 
-function reEnableMovement() {
+export function drawSetupArrow(from: Key, to: Key) {
   if (!cg) return;
-  cg.set({
-    lastMove: undefined,
-    movable: {
-      free: true,
-      color: 'both',
-    },
-  });
+  cg.setAutoShapes([{ orig: from, dest: to, brush: 'yellow' }]);
 }
 
-export function playSetupMove(from: Key, to: Key, afterFen: string): Promise<void> {
+export function playSetupMove(from: Key, to: Key): Promise<void> {
   return new Promise(resolve => {
     if (!cg) { resolve(); return; }
-    // Ensure animation is on for the setup move
     cg.set({ animation: { enabled: true } });
     cg.move(from, to);
-    // Update currentFen to the post-setup position
-    currentFen = afterFen;
-    // Wait for animation to finish, then resolve
-    setTimeout(() => {
-      if (cg) {
-        // Sync the board to the real post-setup FEN (handles castling/en-passant visuals)
-        cg.set({ fen: afterFen, lastMove: [from, to] });
-        // Draw an arrow over the setup move
-        cg.setAutoShapes([{ orig: from, dest: to, brush: 'yellow' }]);
-        // Restore the user's animation preference
-        const isDynamic = getBoardVisibility() === 'dynamic';
-        cg.set({ animation: { enabled: isDynamic } });
-      }
-      resolve();
-    }, 350);
+    setTimeout(resolve, 350);
   });
 }
 
 export function resetToInitial() {
+  selectedSquare = null;
   resetPosition();
 }
 
 export function replayMoves(moves: Move[]) {
   if (!cg) return;
   if (getBoardVisibility() === 'static') return;
-  // Reset to initial position then replay each move visually
   resetPosition();
   for (const move of moves) {
     cg.move(move.from, move.to);
   }
-  reEnableMovement();
 }
 
 export function getApi(): Api | null {
@@ -199,20 +241,9 @@ export function clearArrows() {
 }
 
 export function setInputEnabled(enabled: boolean) {
-  if (!cg) return;
-  cg.set({
-    movable: {
-      free: enabled,
-      color: enabled ? 'both' : undefined,
-    },
-    draggable: {
-      enabled,
-    },
-    selectable: {
-      enabled,
-    },
-  });
+  inputEnabled = enabled;
   if (!enabled) {
-    cg.selectSquare(null);
+    selectedSquare = null;
+    if (cg) cg.selectSquare(null);
   }
 }
