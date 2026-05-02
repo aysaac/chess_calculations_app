@@ -3,7 +3,7 @@ import 'chessground/assets/chessground.brown.css';
 import 'chessground/assets/chessground.cburnett.css';
 import './style.css';
 
-import { initBoard, playSetupMove, drawSetupArrow } from './board';
+import { initBoard, playSetupMove, drawSetupArrow, syncSettings } from './board';
 import { loadPuzzle, setPuzzleSource, getPuzzleSource } from './puzzle';
 import { initInput, setInputEnabled } from './input';
 import { newLine, undo, finish, reset, setOnChange, setPuzzleFen } from './lines';
@@ -96,6 +96,12 @@ sourceToggle.addEventListener('click', () => {
 
 // Wire up line change notifications
 setOnChange(updateUI);
+
+// Re-sync board with current settings when the page is restored from bfcache
+// (e.g. user changes settings, then presses Back)
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) syncSettings();
+});
 
 // Start
 sourceToggle.textContent = `Source: ${getPuzzleSource().toUpperCase()}`;

@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
@@ -9,5 +10,8 @@ export default defineConfig({
         settings: resolve(__dirname, 'settings.html'),
       },
     },
+  },
+  test: {
+    include: ['src/__tests__/**/*.test.ts'],
   },
 });

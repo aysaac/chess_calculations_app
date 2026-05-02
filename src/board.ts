@@ -14,7 +14,9 @@ let onMoveInput: ((from: Key, to: Key) => void) | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let inputEnabled = true;
 let selectedSquare: Key | null = null;
-let clickHandler: ((e: MouseEvent) => void) | null = null;
+let pointerDownHandler: ((e: PointerEvent) => void) | null = null;
+let pointerMoveHandler: ((e: PointerEvent) => void) | null = null;
+let pointerUpHandler: ((e: PointerEvent) => void) | null = null;
 let overlayElement: HTMLElement | null = null;
 
 const files = 'abcdefgh';
@@ -53,12 +55,55 @@ function updateSelectedHighlight() {
   }
 }
 
-function handleBoardClick(e: MouseEvent) {
-  if (!inputEnabled) return;
+// ---- Pointer-based input: supports both click-to-move and drag-to-move ----
 
+let dragStart: Key | null = null;
+let dragActive = false;
+let pointerMoved = false;
+
+function handlePointerDown(e: PointerEvent) {
+  if (!inputEnabled) return;
   const square = squareFromEvent(e);
   if (!square) return;
 
+  dragStart = square;
+  pointerMoved = false;
+  dragActive = true;
+  overlayElement?.setPointerCapture(e.pointerId);
+  overlayElement?.classList.add('dragging');
+}
+
+function handlePointerMove(e: PointerEvent) {
+  if (!dragActive) return;
+  // If pointer has moved from the start square, treat this as a drag
+  const currentSquare = squareFromEvent(e);
+  if (currentSquare && currentSquare !== dragStart) {
+    pointerMoved = true;
+  }
+}
+
+function handlePointerUp(e: PointerEvent) {
+  if (!dragActive) return;
+  dragActive = false;
+  overlayElement?.classList.remove('dragging');
+
+  const endSquare = squareFromEvent(e);
+
+  if (pointerMoved && dragStart && endSquare && endSquare !== dragStart) {
+    // Drag completed — emit the move
+    selectedSquare = null;
+    updateSelectedHighlight();
+    if (onMoveInput) onMoveInput(dragStart, endSquare);
+  } else if (dragStart) {
+    // It was a click (no significant movement)
+    handleSquareClick(dragStart);
+  }
+
+  dragStart = null;
+  pointerMoved = false;
+}
+
+function handleSquareClick(square: Key) {
   if (!selectedSquare) {
     selectedSquare = square;
     updateSelectedHighlight();
@@ -112,14 +157,20 @@ export function initBoard(element: HTMLElement, fen: string, orientation: 'white
     },
   });
 
-  // Attach click handler to the overlay so it's never intercepted by chessground
+  // Attach pointer handlers to the overlay for click-to-move + drag-to-move
   overlayElement = document.getElementById('board-overlay');
   if (overlayElement) {
-    if (clickHandler) {
-      overlayElement.removeEventListener('click', clickHandler);
+    if (pointerDownHandler) {
+      overlayElement.removeEventListener('pointerdown', pointerDownHandler as EventListener);
+      overlayElement.removeEventListener('pointermove', pointerMoveHandler as EventListener);
+      overlayElement.removeEventListener('pointerup', pointerUpHandler as EventListener);
     }
-    clickHandler = (e: MouseEvent) => handleBoardClick(e);
-    overlayElement.addEventListener('click', clickHandler);
+    pointerDownHandler = (e: PointerEvent) => handlePointerDown(e);
+    pointerMoveHandler = (e: PointerEvent) => handlePointerMove(e);
+    pointerUpHandler = (e: PointerEvent) => handlePointerUp(e);
+    overlayElement.addEventListener('pointerdown', pointerDownHandler);
+    overlayElement.addEventListener('pointermove', pointerMoveHandler);
+    overlayElement.addEventListener('pointerup', pointerUpHandler);
   }
 
   // Make the board resizable — keep it square and sync chessground + overlay
@@ -171,6 +222,14 @@ export function playSetupMove(from: Key, to: Key): Promise<void> {
   });
 }
 
+/** Move a piece on the board — only has effect in dynamic visibility mode. */
+export function animateMove(from: Key, to: Key) {
+  if (!cg) return;
+  if (getBoardVisibility() === 'dynamic') {
+    cg.move(from, to);
+  }
+}
+
 export function resetToInitial() {
   selectedSquare = null;
   resetPosition();
@@ -178,10 +237,11 @@ export function resetToInitial() {
 
 export function replayMoves(moves: Move[]) {
   if (!cg) return;
-  if (getBoardVisibility() === 'static') return;
   resetPosition();
-  for (const move of moves) {
-    cg.move(move.from, move.to);
+  if (getBoardVisibility() === 'dynamic') {
+    for (const move of moves) {
+      cg.move(move.from, move.to);
+    }
   }
 }
 
@@ -204,7 +264,14 @@ export function drawArrows(moves: Move[]) {
   renderArrows();
 }
 
-export function drawCurrentArrows() {
+export function syncSettings() {
+  if (!cg || !boardElement) return;
+
+  const isDynamic = getBoardVisibility() === 'dynamic';
+  boardElement.classList.toggle('static-board', !isDynamic);
+  cg.set({ animation: { enabled: isDynamic } });
+
+  // Re-render arrows in case arrow visibility / color settings changed
   renderArrows();
 }
 

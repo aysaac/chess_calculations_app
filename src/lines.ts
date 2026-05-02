@@ -1,6 +1,6 @@
 import type { Key } from 'chessground/types';
 import type { Move, Line } from './types';
-import { drawArrows, resetToInitial, replayMoves } from './board';
+import { drawArrows, resetToInitial, replayMoves, animateMove } from './board';
 import { validateMoves } from './validation';
 
 let puzzleFen: string = '';
@@ -29,6 +29,7 @@ function revalidateCurrent() {
 export function addMove(from: Key, to: Key) {
   currentLine.push({ from, to, legal: true });
   revalidateCurrent();
+  animateMove(from, to);
   drawArrows(currentLine);
   notify();
 }
