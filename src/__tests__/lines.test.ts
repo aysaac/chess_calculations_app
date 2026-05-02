@@ -13,7 +13,7 @@ vi.mock('../board', () => ({
 // Mock validation module — return legal moves with generated SAN
 vi.mock('../validation', () => ({
   validateMoves: vi.fn((_fen: string, moves: { from: string; to: string; legal: boolean }[]) =>
-    moves.map((m, i) => ({
+    moves.map((m) => ({
       ...m,
       legal: true,
       san: `${m.from}${m.to}`,
