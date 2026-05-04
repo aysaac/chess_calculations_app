@@ -72,7 +72,7 @@ Workers & Pages → chess-calculations → Settings → Build & Deploy:
 |---|---|
 | Build command | `npm run build` |
 | Deploy command | `npm run deploy` |
-| Build output directory | *(empty — Workers doesn't use this)* |
+| Build output directory | *(emptya
 | Root directory | *(empty)* |
 
 ## Git auto-deploy
