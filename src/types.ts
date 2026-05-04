@@ -44,3 +44,38 @@ export interface Settings {
   ratingMin: number;
   ratingMax: number;
 }
+
+// ---- Evaluation types ----
+
+export interface EvalPv {
+  moves: string;  // space-separated UCI, e.g. "e2e4 e7e5 g1f3"
+  cp: number;     // centipawns from side-to-move perspective
+}
+
+export interface CloudEvalResponse {
+  fen: string;
+  knodes: number;
+  depth: number;
+  pvs: EvalPv[];
+}
+
+export interface LineScore {
+  lineIndex: number;
+  label: string;                 // "Line 1", "Line 2", etc.
+  cp: number | null;             // null = no engine match
+  matchedPvIndex: number | null;
+  matchedMoves: number;          // how many moves matched the PV
+  pvLength: number;              // total PV length
+}
+
+export interface EvaluationResult {
+  lineScores: LineScore[];
+  forcedLinesTotal: number;
+  forcedLinesCovered: number;
+  importantLinesTotal: number;
+  importantLinesCovered: number;
+  engineBestCp: number;
+  userBestCp: number | null;
+  pvs: EvalPv[];
+  hasData: boolean;
+}

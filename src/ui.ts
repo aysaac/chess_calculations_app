@@ -1,6 +1,7 @@
-import type { Move, Puzzle } from './types';
+import type { Move, Puzzle, EvaluationResult } from './types';
 import { getCurrentLine, getCompletedLines } from './lines';
 import { solutionToSan } from './validation';
+import { pvToUciSequence, cpToString } from './evaluation';
 
 const pieceIcons: Record<string, string> = {
   K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘',
@@ -70,7 +71,7 @@ function formatSolution(fen: string, solution: string[]): string {
   return result.trim();
 }
 
-export function updateLineDisplay(container: HTMLElement, finished: boolean = false, puzzle?: Puzzle) {
+export function updateLineDisplay(container: HTMLElement, finished: boolean = false, puzzle?: Puzzle, evaluation?: EvaluationResult) {
   const completedLines = getCompletedLines();
   const currentLine = getCurrentLine();
 
@@ -106,6 +107,10 @@ export function updateLineDisplay(container: HTMLElement, finished: boolean = fa
     </div>`;
   }
 
+  if (finished && evaluation) {
+    html += renderEvaluation(evaluation);
+  }
+
   container.innerHTML = html;
 }
 
@@ -118,6 +123,78 @@ export function updatePuzzleInfo(container: HTMLElement, puzzle: Puzzle) {
     html += ` <span class="puzzle-themes">${puzzle.themes.join(', ')}</span>`;
   }
   container.innerHTML = html;
+}
+
+// ---- Evaluation display ----
+
+function renderEvaluation(eval_: EvaluationResult): string {
+  if (!eval_.hasData) {
+    return `<div class="evaluation">
+      <h3>Evaluation</h3>
+      <p class="eval-no-data">No engine data available for this position.</p>
+    </div>`;
+  }
+
+  let html = '<div class="evaluation"><h3>Evaluation</h3>';
+
+  html += `<div class="eval-metric">
+    <span class="eval-label">Engine eval:</span>
+    <span class="eval-value eval-engine">${cpToString(eval_.engineBestCp)}</span>
+  </div>`;
+
+  // User's best line
+  if (eval_.userBestCp !== null) {
+    const diff = eval_.engineBestCp - eval_.userBestCp;
+    const diffStr = diff > 0 ? ` (−${cpToString(diff)})` : diff < 0 ? ` (+${cpToString(-diff)})` : '';
+    html += `<div class="eval-metric">
+      <span class="eval-label">Your best line:</span>
+      <span class="eval-value">${cpToString(eval_.userBestCp)}<span class="eval-diff">${diffStr}</span></span>
+    </div>`;
+  } else {
+    html += `<div class="eval-metric">
+      <span class="eval-label">Your best line:</span>
+      <span class="eval-value eval-none">no match</span>
+    </div>`;
+  }
+
+  // Forced lines
+  html += `<div class="eval-metric">
+    <span class="eval-label">Forced lines covered:</span>
+    <span class="eval-value">${eval_.forcedLinesCovered}/${eval_.forcedLinesTotal}</span>
+  </div>`;
+
+  // Important lines
+  html += `<div class="eval-metric">
+    <span class="eval-label">Important lines covered:</span>
+    <span class="eval-value">${eval_.importantLinesCovered}/${eval_.importantLinesTotal}</span>
+  </div>`;
+
+  // Engine PVs with matches
+  html += '<div class="eval-pvs"><div class="eval-pvs-title">Engine top lines:</div>';
+  eval_.pvs.forEach((pv, idx) => {
+    const pvMoves = pvToUciSequence(pv.moves);
+    const pvDisplay = pvMoves.slice(0, 5).join(' ');
+
+    // Find which user line matched this PV
+    const matched = eval_.lineScores.filter(ls => ls.matchedPvIndex === idx);
+    const matchLabel = matched.length > 0
+      ? ` ← ${matched.map(ls => {
+          const detail = ls.matchedMoves < ls.pvLength ? ` (matched ${ls.matchedMoves}/${ls.pvLength})` : '';
+          return `${ls.label}${detail}`;
+        }).join(', ')}`
+      : '';
+
+    html += `<div class="eval-pv-line">
+      <span class="eval-pv-index">${idx + 1}.</span>
+      <span class="eval-pv-moves">${pvDisplay}</span>
+      <span class="eval-pv-cp">(${cpToString(pv.cp)})</span>
+      ${matchLabel ? `<span class="eval-pv-match">${matchLabel}</span>` : ''}
+    </div>`;
+  });
+  html += '</div>';
+
+  html += '</div>';
+  return html;
 }
 
 export function setButtonStates(opts: {
