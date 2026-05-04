@@ -127,6 +127,7 @@ export async function evaluateLines(
   puzzleFen: string,
   completedLines: Line[],
   currentLine: Move[],
+  solutionLength: number,
 ): Promise<EvaluationResult> {
   // Gather all non-empty user lines
   const allLines: { moves: Move[]; label: string; index: number }[] = [];
@@ -150,6 +151,7 @@ export async function evaluateLines(
     pvs: [],
     hasData: false,
     puzzleFen,
+    solutionLength,
   };
 
   if (allLines.length === 0) return noDataResult;
@@ -203,5 +205,6 @@ export async function evaluateLines(
     pvs,
     hasData: true,
     puzzleFen,
+    solutionLength,
   };
 }

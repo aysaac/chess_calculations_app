@@ -206,7 +206,7 @@ function renderEvaluation(eval_: EvaluationResult): string {
   html += '<div class="eval-pvs"><div class="eval-pvs-title">Engine top lines:</div>';
   eval_.pvs.forEach((pv, idx) => {
     const pvMoves = pvToUciSequence(pv.moves);
-    const pvDisplay = pvToSanFormatted(eval_.puzzleFen, pvMoves.slice(0, 6));
+    const pvDisplay = pvToSanFormatted(eval_.puzzleFen, pvMoves.slice(0, eval_.solutionLength));
 
     // Find which user line matched this PV
     const matched = eval_.lineScores.filter(ls => ls.matchedPvIndex === idx);

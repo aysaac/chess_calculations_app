@@ -89,7 +89,7 @@ finishedBtn.addEventListener('click', async () => {
   updateUI();
 
   if (currentPuzzle) {
-    currentEvaluation = await evaluateLines(currentPuzzle.fen, completedLines, currentLine);
+    currentEvaluation = await evaluateLines(currentPuzzle.fen, completedLines, currentLine, currentPuzzle.solution.length);
   }
 
   statusEl.textContent = 'Compare your lines with the solution below.';

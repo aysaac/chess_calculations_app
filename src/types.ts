@@ -79,4 +79,5 @@ export interface EvaluationResult {
   pvs: EvalPv[];
   hasData: boolean;
   puzzleFen: string;
+  solutionLength: number;
 }
