@@ -1,9 +1,10 @@
 import type { Move, Line, EvalPv, CloudEvalResponse, LineScore, EvaluationResult } from './types';
+import { evaluateWithStockfish } from './engine';
 
 // ---- Constants ----
 
 /** Centipawn difference between best and 2nd-best PV to consider best move "forced". */
-const FORCED_THRESHOLD = 150;
+const FORCED_THRESHOLD = 25;
 
 /** Centipawn range from best PV to consider a PV "important". */
 const IMPORTANT_THRESHOLD = 100;
@@ -90,6 +91,27 @@ function countFirstMoveCovered(pvs: EvalPv[], userLinesUci: string[][]): number 
   return covered;
 }
 
+// ---- PV source (cloud first, Stockfish fallback) ----
+
+/** Get engine PVs for a position — tries cloud cache first, falls back to Stockfish. */
+async function getPvs(fen: string, multiPv: number): Promise<EvalPv[] | null> {
+  // 1. Try Lichess cloud eval
+  const cloud = await fetchCloudEval(fen, multiPv);
+  if (cloud && cloud.pvs && cloud.pvs.length > 0) {
+    return cloud.pvs;
+  }
+
+  // 2. Fall back to Stockfish WASM
+  const sf = await evaluateWithStockfish(fen, multiPv);
+  if (sf && sf.length > 0) {
+    return sf;
+  }
+
+  return null;
+}
+
+export { preloadEngine } from './engine';
+
 // ---- Main evaluation ----
 
 /**
@@ -131,14 +153,14 @@ export async function evaluateLines(
 
   if (allLines.length === 0) return noDataResult;
 
-  const evalData = await fetchCloudEval(puzzleFen, DEFAULT_MULTI_PV);
-  if (!evalData || !evalData.pvs || evalData.pvs.length === 0) return noDataResult;
+  const pvs = await getPvs(puzzleFen, DEFAULT_MULTI_PV);
+  if (!pvs || pvs.length === 0) return noDataResult;
 
   const userLinesUci = allLines.map(l => lineToUciSequence(l.moves));
 
   // 1. Score each user line
   const lineScores: LineScore[] = userLinesUci.map((uci, idx) => {
-    const { cp, pvIndex, matchedMoves, pvLength } = matchLineToPv(uci, evalData.pvs);
+    const { cp, pvIndex, matchedMoves, pvLength } = matchLineToPv(uci, pvs);
     return {
       lineIndex: allLines[idx].index,
       label: allLines[idx].label,
@@ -152,14 +174,14 @@ export async function evaluateLines(
   // 2. Forced lines: best line is forced if it's significantly better than 2nd best
   let forcedLinesTotal = 0;
   let forcedLinesCovered = 0;
-  if (evalData.pvs.length >= 2 && evalData.pvs[0].cp - evalData.pvs[1].cp > FORCED_THRESHOLD) {
+  if (pvs.length >= 2 && pvs[0].cp - pvs[1].cp > FORCED_THRESHOLD) {
     forcedLinesTotal = 1;
-    forcedLinesCovered = countFirstMoveCovered([evalData.pvs[0]], userLinesUci);
+    forcedLinesCovered = countFirstMoveCovered([pvs[0]], userLinesUci);
   }
 
   // 3. Important lines: all PVs within IMPORTANT_THRESHOLD of the best
-  const bestCp = evalData.pvs[0].cp;
-  const important = evalData.pvs.filter(pv => bestCp - pv.cp <= IMPORTANT_THRESHOLD);
+  const bestCp = pvs[0].cp;
+  const important = pvs.filter(pv => bestCp - pv.cp <= IMPORTANT_THRESHOLD);
   const importantLinesTotal = important.length;
   const importantLinesCovered = countFirstMoveCovered(important, userLinesUci);
 
@@ -177,7 +199,7 @@ export async function evaluateLines(
     importantLinesCovered,
     engineBestCp: bestCp,
     userBestCp,
-    pvs: evalData.pvs,
+    pvs,
     hasData: true,
   };
 }

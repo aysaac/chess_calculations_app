@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "chess.js": "^1.4.0",
-    "chessground": "^9.2.1"
+    "chessground": "^9.2.1",
+    "stockfish": "^18.0.7"
   }
 }

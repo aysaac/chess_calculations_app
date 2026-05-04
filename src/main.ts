@@ -8,7 +8,7 @@ import { loadPuzzle, setPuzzleSource, getPuzzleSource } from './puzzle';
 import { initInput, setInputEnabled } from './input';
 import { newLine, undo, finish, reset, setOnChange, setPuzzleFen } from './lines';
 import { updateLineDisplay, updatePuzzleInfo, setButtonStates } from './ui';
-import { evaluateLines } from './evaluation';
+import { evaluateLines, preloadEngine } from './evaluation';
 import type { Puzzle, EvaluationResult } from './types';
 
 let currentPuzzle: Puzzle | null = null;
@@ -67,6 +67,9 @@ async function startPuzzle() {
   drawSetupArrow(from, to);
   setInputEnabled(true);
   statusEl.textContent = `${currentPuzzle.playerColor === 'white' ? 'White' : 'Black'} to move. Drag pieces or click squares to input your lines.`;
+
+  // Preload Stockfish in the background (only used as fallback if Lichess cache misses)
+  preloadEngine();
 }
 
 // Button handlers
