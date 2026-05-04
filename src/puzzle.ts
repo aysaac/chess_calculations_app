@@ -86,7 +86,7 @@ function tryBuildPuzzle(entry: CsvPuzzle): Puzzle | null {
 
 async function loadFromCsv(): Promise<Puzzle> {
   if (!csvPuzzles) {
-    const resp = await fetch(import.meta.env.BASE_URL + 'puzzles.csv');
+    const resp = await fetch('/puzzles.csv');
     const text = await resp.text();
     csvPuzzles = parseCsv(text);
   }
