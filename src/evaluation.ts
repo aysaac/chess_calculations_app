@@ -149,6 +149,7 @@ export async function evaluateLines(
     userBestCp: null,
     pvs: [],
     hasData: false,
+    puzzleFen,
   };
 
   if (allLines.length === 0) return noDataResult;
@@ -201,5 +202,6 @@ export async function evaluateLines(
     userBestCp,
     pvs,
     hasData: true,
+    puzzleFen,
   };
 }

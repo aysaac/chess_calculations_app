@@ -78,4 +78,5 @@ export interface EvaluationResult {
   userBestCp: number | null;
   pvs: EvalPv[];
   hasData: boolean;
+  puzzleFen: string;
 }

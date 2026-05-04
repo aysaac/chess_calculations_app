@@ -1,5 +1,6 @@
 import type { Move, Puzzle, EvaluationResult } from './types';
 import { getCurrentLine, getCompletedLines } from './lines';
+import { Chess } from 'chess.js';
 import { solutionToSan } from './validation';
 import { pvToUciSequence, cpToString } from './evaluation';
 
@@ -127,6 +128,38 @@ export function updatePuzzleInfo(container: HTMLElement, puzzle: Puzzle) {
 
 // ---- Evaluation display ----
 
+/** Convert PV UCI moves to SAN-displayable string, e.g. "1. ♘f3 d5 2. c4 e6". */
+function pvToSanFormatted(fen: string, uciMoves: string[]): string {
+  const chess = new Chess(fen);
+  let result = '';
+
+  for (let i = 0; i < uciMoves.length; i++) {
+    const uci = uciMoves[i];
+    const from = uci.slice(0, 2);
+    const to = uci.slice(2, 4);
+    const promotion = uci.length > 4 ? uci[4] : undefined;
+
+    let san: string;
+    try {
+      const move = chess.move({ from, to, promotion });
+      san = move ? move.san : uci;
+    } catch {
+      san = uci;
+    }
+
+    const display = sanWithIcon(san);
+    const moveNum = 1 + Math.floor(i / 2);
+
+    if (i % 2 === 0) {
+      result += `${moveNum}. ${display} `;
+    } else {
+      result += `${display} `;
+    }
+  }
+
+  return result.trim();
+}
+
 function renderEvaluation(eval_: EvaluationResult): string {
   if (!eval_.hasData) {
     return `<div class="evaluation">
@@ -173,7 +206,7 @@ function renderEvaluation(eval_: EvaluationResult): string {
   html += '<div class="eval-pvs"><div class="eval-pvs-title">Engine top lines:</div>';
   eval_.pvs.forEach((pv, idx) => {
     const pvMoves = pvToUciSequence(pv.moves);
-    const pvDisplay = pvMoves.slice(0, 5).join(' ');
+    const pvDisplay = pvToSanFormatted(eval_.puzzleFen, pvMoves.slice(0, 6));
 
     // Find which user line matched this PV
     const matched = eval_.lineScores.filter(ls => ls.matchedPvIndex === idx);
