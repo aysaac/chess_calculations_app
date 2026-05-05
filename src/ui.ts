@@ -33,7 +33,7 @@ function formatLineUci(moves: Move[], startNumber: number = 1): string {
   return result.trim();
 }
 
-function formatLineValidated(moves: Move[], startNumber: number = 1): string {
+function formatLineValidated(moves: Move[], startNumber: number = 1, matchedCount: number = 0): string {
   let result = '';
   let seenIllegal = false;
 
@@ -44,9 +44,14 @@ function formatLineValidated(moves: Move[], startNumber: number = 1): string {
     if (!move.legal) seenIllegal = true;
 
     const text = (move.legal && move.san) ? sanWithIcon(move.san) : moveToUci(move);
-    const moveHtml = seenIllegal
-      ? `<span class="illegal-move">${text}</span>`
-      : text;
+    let moveHtml: string;
+    if (seenIllegal) {
+      moveHtml = `<span class="illegal-move">${text}</span>`;
+    } else if (i < matchedCount) {
+      moveHtml = `<span class="engine-match">${text}</span>`;
+    } else {
+      moveHtml = text;
+    }
 
     if (i % 2 === 0) {
       result += `${moveNum}. ${moveHtml} `;
@@ -55,6 +60,13 @@ function formatLineValidated(moves: Move[], startNumber: number = 1): string {
     }
   }
   return result.trim();
+}
+
+/** Look up how many moves of a user line matched an engine PV. */
+function getMatchedCount(lineIndex: number, evaluation?: EvaluationResult): number {
+  if (!evaluation) return 0;
+  const score = evaluation.lineScores.find(ls => ls.lineIndex === lineIndex);
+  return score?.matchedMoves ?? 0;
 }
 
 function formatSolution(fen: string, solution: string[]): string {
@@ -83,7 +95,8 @@ export function updateLineDisplay(container: HTMLElement, finished: boolean = fa
   }
 
   completedLines.forEach((line, idx) => {
-    const movesHtml = finished ? formatLineValidated(line.moves) : formatLineUci(line.moves);
+    const matchedCount = getMatchedCount(idx, evaluation);
+    const movesHtml = finished ? formatLineValidated(line.moves, idx + 1, matchedCount) : formatLineUci(line.moves);
     html += `<div class="line completed-line">
       <span class="line-label">Line ${idx + 1}:</span>
       <span class="line-moves">${movesHtml}</span>
@@ -91,7 +104,9 @@ export function updateLineDisplay(container: HTMLElement, finished: boolean = fa
   });
 
   if (currentLine.length > 0) {
-    const movesHtml = finished ? formatLineValidated(currentLine) : formatLineUci(currentLine);
+    const currentIdx = completedLines.length;
+    const matchedCount = getMatchedCount(currentIdx, evaluation);
+    const movesHtml = finished ? formatLineValidated(currentLine, currentIdx + 1, matchedCount) : formatLineUci(currentLine);
     html += `<div class="line current-line">
       <span class="line-label">${finished ? `Line ${completedLines.length + 1}:` : 'Current:'}</span>
       <span class="line-moves">${movesHtml}</span>

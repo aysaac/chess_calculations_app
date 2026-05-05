@@ -228,6 +228,11 @@ button:disabled {
   font-weight: 600;
 }
 
+.engine-match {
+  color: #4aca4a;
+  font-weight: 600;
+}
+
 .in-progress {
   color: #5a5aff;
   animation: pulse 1s infinite;
