@@ -8,10 +8,12 @@ import { loadPuzzle, setPuzzleSource, getPuzzleSource } from './puzzle';
 import { initInput, setInputEnabled } from './input';
 import { newLine, undo, finish, reset, setOnChange, setPuzzleFen } from './lines';
 import { updateLineDisplay, updatePuzzleInfo, setButtonStates } from './ui';
-import type { Puzzle } from './types';
+import { evaluateLines, preloadEngine } from './evaluation';
+import type { Puzzle, EvaluationResult } from './types';
 
 let currentPuzzle: Puzzle | null = null;
 let isFinished = false;
+let currentEvaluation: EvaluationResult | null = null;
 
 // DOM elements
 const boardEl = document.getElementById('board')!;
@@ -25,7 +27,7 @@ const sourceToggle = document.getElementById('source-toggle') as HTMLButtonEleme
 const statusEl = document.getElementById('status')!;
 
 function updateUI() {
-  updateLineDisplay(linesEl, isFinished, currentPuzzle ?? undefined);
+  updateLineDisplay(linesEl, isFinished, currentPuzzle ?? undefined, currentEvaluation ?? undefined);
   setButtonStates({
     newLineBtn,
     undoBtn,
@@ -38,6 +40,7 @@ function updateUI() {
 async function startPuzzle() {
   statusEl.textContent = 'Loading puzzle...';
   isFinished = false;
+  currentEvaluation = null;
   reset();
 
   try {
@@ -64,6 +67,9 @@ async function startPuzzle() {
   drawSetupArrow(from, to);
   setInputEnabled(true);
   statusEl.textContent = `${currentPuzzle.playerColor === 'white' ? 'White' : 'Black'} to move. Drag pieces or click squares to input your lines.`;
+
+  // Preload Stockfish in the background (only used as fallback if Lichess cache misses)
+  preloadEngine();
 }
 
 // Button handlers
@@ -75,10 +81,17 @@ undoBtn.addEventListener('click', () => {
   undo();
 });
 
-finishedBtn.addEventListener('click', () => {
+finishedBtn.addEventListener('click', async () => {
   isFinished = true;
   setInputEnabled(false);
-  finish();
+  const { completedLines, currentLine } = finish();
+  statusEl.textContent = 'Evaluating your lines...';
+  updateUI();
+
+  if (currentPuzzle) {
+    currentEvaluation = await evaluateLines(currentPuzzle.fen, completedLines, currentLine, currentPuzzle.solution.length);
+  }
+
   statusEl.textContent = 'Compare your lines with the solution below.';
   updateUI();
 });

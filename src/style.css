@@ -228,6 +228,11 @@ button:disabled {
   font-weight: 600;
 }
 
+.engine-match {
+  color: #4aca4a;
+  font-weight: 600;
+}
+
 .in-progress {
   color: #5a5aff;
   animation: pulse 1s infinite;
@@ -265,6 +270,98 @@ button:disabled {
 
 .static-board piece.ghost {
   opacity: 1 !important;
+}
+
+/* Evaluation display */
+.evaluation {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #444;
+}
+
+.evaluation h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1em;
+  color: #f0c040;
+}
+
+.eval-no-data {
+  color: #888;
+  font-style: italic;
+  margin: 0;
+}
+
+.eval-metric {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0;
+  font-size: 0.9em;
+}
+
+.eval-label {
+  color: #aaa;
+}
+
+.eval-value {
+  color: #ddd;
+  font-weight: 500;
+}
+
+.eval-value.eval-engine {
+  color: #4a8a4a;
+}
+
+.eval-value.eval-none {
+  color: #888;
+  font-style: italic;
+}
+
+.eval-diff {
+  color: #ff6666;
+  font-size: 0.85em;
+  margin-left: 0.3em;
+}
+
+.eval-pvs {
+  margin-top: 0.75rem;
+  padding: 0.6rem;
+  background: #222236;
+  border-radius: 4px;
+}
+
+.eval-pvs-title {
+  font-size: 0.85em;
+  color: #888;
+  margin-bottom: 0.4rem;
+}
+
+.eval-pv-line {
+  font-family: 'Courier New', monospace;
+  font-size: 0.82em;
+  padding: 0.2rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  align-items: baseline;
+}
+
+.eval-pv-index {
+  color: #666;
+  min-width: 1.2em;
+}
+
+.eval-pv-moves {
+  color: #ccc;
+}
+
+.eval-pv-cp {
+  color: #f0c040;
+}
+
+.eval-pv-match {
+  color: #5a5aff;
+  font-family: system-ui, sans-serif;
+  font-size: 0.9em;
 }
 
 /* Mobile responsive */
