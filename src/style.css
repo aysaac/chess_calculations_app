@@ -39,7 +39,12 @@ h1 {
   text-align: center;
 }
 
-#settings-link {
+#top-bar nav {
+  display: flex;
+  gap: 0.6rem;
+}
+
+#top-bar nav a {
   color: #7a7aff;
   text-decoration: none;
   font-size: 0.95em;
@@ -50,7 +55,7 @@ h1 {
   white-space: nowrap;
 }
 
-#settings-link:hover {
+#top-bar nav a:hover {
   background: #2a2a4a;
   border-color: #555;
 }
@@ -385,4 +390,89 @@ button:disabled {
     max-width: 100%;
     width: 100%;
   }
+}
+
+/* Book analysis mode */
+.book-side {
+  font-weight: 600;
+  color: #f0c040;
+  margin-bottom: 0.4rem;
+}
+
+.book-plan {
+  margin: 0 0 0.6rem;
+  font-size: 0.9em;
+  color: #ccc;
+}
+
+.book-warning {
+  margin: 0 0 0.6rem;
+  font-size: 0.85em;
+  color: #e08a4a;
+}
+
+.book-line {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.25rem 0;
+  font-size: 0.9em;
+}
+
+.book-mark {
+  width: 1.2em;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.book-full .book-mark {
+  color: #5fcf7a;
+}
+
+.book-partial .book-mark {
+  color: #f0c040;
+}
+
+.book-none .book-mark {
+  color: #e05a5a;
+}
+
+.book-progress {
+  color: #999;
+  font-size: 0.85em;
+}
+
+.book-optional,
+.book-analysis {
+  margin-top: 0.6rem;
+  font-size: 0.85em;
+  color: #aaa;
+}
+
+.book-optional summary,
+.book-analysis summary {
+  cursor: pointer;
+}
+
+.book-eval-text {
+  margin: 0 0 0.6rem;
+  font-size: 1em;
+}
+
+.book-source {
+  margin: 0 0 0.6rem;
+  font-size: 0.85em;
+  color: #999;
+}
+
+.book-import {
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #333;
+  font-size: 0.8em;
+  color: #888;
+}
+
+.book-import button {
+  margin-top: 0.4rem;
 }

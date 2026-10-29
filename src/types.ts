@@ -81,3 +81,50 @@ export interface EvaluationResult {
   puzzleFen: string;
   solutionLength: number;
 }
+
+// ---- Book analysis mode ----
+
+export interface BookLine {
+  id: string;
+  depth: number;        // 0 = main line, 1 = first-level variation, ...
+  required: boolean;    // lines the player must propose (depth <= 1)
+  uci: string[];
+  san: string[];
+}
+
+export interface BookProblem {
+  id: string;
+  week: number;
+  day: number;
+  label: string;        // "a" | "b"
+  side: 'white' | 'black';
+  pdfPage: number;
+  fen: string;
+  source: string;
+  planWhite: string;
+  planBlack: string;
+  candidates: string;
+  analysis: string;
+  evaluation: string;
+  lines: BookLine[];
+  meta: {
+    fenSource: string;
+    failed: number;     // moves in the text that could not be placed from this position
+    accepted: number;
+    ambiguous: number;
+    note: string;
+  };
+}
+
+export interface BookLineResult {
+  line: BookLine;
+  matched: number;               // leading plies of the book line the player reproduced
+  status: 'full' | 'partial' | 'none';
+  userLine: number | null;       // index of the best-matching player line
+}
+
+export interface BookEvaluation {
+  results: BookLineResult[];
+  requiredTotal: number;
+  requiredCovered: number;
+}

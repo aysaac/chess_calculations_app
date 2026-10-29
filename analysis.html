@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book Analysis – Chess Calculation Trainer</title>
+  </head>
+  <body>
+    <div id="app">
+      <header id="top-bar">
+        <h1>Book Analysis</h1>
+        <nav>
+          <a href="/" id="tactics-link">Tactics</a>
+          <a href="/settings.html" id="settings-link">Settings</a>
+        </nav>
+      </header>
+      <div id="puzzle-info"></div>
+      <div id="status"></div>
+      <div id="main-layout">
+        <div id="board-container">
+          <div id="board-wrap">
+            <div id="board"></div>
+            <div id="board-overlay"></div>
+          </div>
+        </div>
+        <div id="sidebar">
+          <div id="controls">
+            <button id="btn-new-line">New Line</button>
+            <button id="btn-undo">Undo</button>
+            <button id="btn-finished">Finished</button>
+            <button id="btn-next" disabled>Next Position</button>
+          </div>
+          <div id="book-prompt"></div>
+          <div id="lines"></div>
+          <div id="book-result"></div>
+          <div id="book-import" class="book-import">
+            <label>
+              Bring your own examples (JSON):
+              <input type="file" id="book-file" accept="application/json,.json" />
+            </label>
+            <button id="btn-clear-book" type="button">Remove imported data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/analysis.ts"></script>
+  </body>
+</html>

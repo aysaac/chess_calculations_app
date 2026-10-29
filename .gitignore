@@ -29,3 +29,11 @@ dist-ssr
 !.dev.vars.example
 .env*
 !.env.example
+
+# book OCR output (copyrighted book content)
+tools/book_ocr/out
+
+# local preload copy of the book analysis (copyrighted, never commit or deploy)
+public/book
+tools/book_ocr/placements.txt
+__pycache__/

@@ -12,7 +12,7 @@ function moveToUci(move: Move): string {
   return `${move.from}${move.to}`;
 }
 
-function sanWithIcon(san: string): string {
+export function sanWithIcon(san: string): string {
   const first = san[0];
   if (pieceIcons[first]) {
     return pieceIcons[first] + san.slice(1);
