@@ -392,6 +392,29 @@ button:disabled {
   }
 }
 
+/* Analysis timer */
+#timer-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.4rem 0;
+}
+
+#timer-display {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.4rem;
+  font-weight: 600;
+  min-width: 4.5ch;
+}
+
+#timer-display.timer-low {
+  color: #f0c040;
+}
+
+#timer-display.timer-done {
+  color: #e05555;
+}
+
 /* Book analysis mode */
 .book-side {
   font-weight: 600;

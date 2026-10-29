@@ -10,6 +10,7 @@ import { newLine, undo, finish, reset, setOnChange, setPuzzleFen } from './lines
 import { updateLineDisplay, setButtonStates, sanWithIcon } from './ui';
 import { solutionToSan } from './validation';
 import { evaluateAgainstBook } from './analysis-eval';
+import { createTimer } from './timer';
 import { parseBook, loadBook, loadPreloadedBook, saveBook, clearBook } from './analysis-store';
 import type { BookProblem, BookEvaluation, BookLine, Line } from './types';
 
@@ -29,6 +30,11 @@ const finishedBtn = document.getElementById('btn-finished') as HTMLButtonElement
 const nextBtn = document.getElementById('btn-next') as HTMLButtonElement;
 const fileInput = document.getElementById('book-file') as HTMLInputElement;
 const clearBtn = document.getElementById('btn-clear-book') as HTMLButtonElement;
+
+const timer = createTimer(
+  document.getElementById('timer-display')!,
+  document.getElementById('btn-timer') as HTMLButtonElement,
+);
 
 function esc(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -119,6 +125,7 @@ function updateUI(): void {
 function startProblem(problem: BookProblem): void {
   current = problem;
   isFinished = false;
+  timer.reset();
   reset();
   setPuzzleFen(problem.fen);
   initBoard(boardEl, problem.fen, problem.side);
@@ -163,6 +170,7 @@ undoBtn.addEventListener('click', () => undo());
 finishedBtn.addEventListener('click', () => {
   if (!current) return;
   isFinished = true;
+  timer.stop();
   setInputEnabled(false);
   const { completedLines, currentLine } = finish();
   const userLines: Line[] = [...completedLines];
